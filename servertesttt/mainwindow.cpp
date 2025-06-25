@@ -1,57 +1,37 @@
 #include "mainwindow.h"
-#include <QVBoxLayout>
-#include <QWidget>
-#include <QPushButton>
+#include "ui_mainwindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), server(new QTcpServer(this)), clientSocket(nullptr) {
-    setupUI();
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+    ui->setupUi(this);
 
-    connect(server, &QTcpServer::newConnection, this, &MainWindow::onNewConnection);
+    serverManager = new ServerManager(this);
 
-    if (server->listen(QHostAddress::Any, 1234)) {
-        log("✅ Server started on port 1234.");
-    } else {
-        log("❌ Failed to start server.");
-    }
+    connect(ui->btnStartServer, &QPushButton::clicked, this, [=]() {
+        if (serverManager->startServer(1234)) {
+            ui->txtLog->append("✅ سرور راه‌اندازی شد.");
+        } else {
+            ui->txtLog->append("❌ خطا در راه‌اندازی سرور.");
+        }
+    });
+
+    connect(serverManager, &ServerManager::playerCountChanged, this, &MainWindow::onPlayerCountChanged);
+    connect(serverManager, &ServerManager::logMessage, this, &MainWindow::onLogMessage);
 }
 
-MainWindow::~MainWindow() {}
-
-void MainWindow::setupUI() {
-    QWidget *central = new QWidget(this);
-    setCentralWidget(central);
-
-    logBox = new QTextEdit(this);
-    logBox->setReadOnly(true);
-
-    QVBoxLayout *layout = new QVBoxLayout(central);
-    layout->addWidget(logBox);
-
-    resize(400, 300);
-    setWindowTitle("Server");
+MainWindow::~MainWindow()
+{
+    delete ui;
 }
 
-void MainWindow::log(const QString &message) {
-    logBox->append(message);
+void MainWindow::onPlayerCountChanged(int count)
+{
+    ui->lblPlayerCount->setText("Players Connected: " + QString::number(count));
 }
 
-void MainWindow::onNewConnection() {
-    clientSocket = server->nextPendingConnection();
-    log("🔌 Client connected.");
-
-    connect(clientSocket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
-    connect(clientSocket, &QTcpSocket::disconnected, this, &MainWindow::onClientDisconnected);
-}
-
-void MainWindow::onReadyRead() {
-    QByteArray data = clientSocket->readAll();
-    log("📥 Received: " + QString::fromUtf8(data));
-    clientSocket->write("👋 سلام از سرور!");
-}
-
-void MainWindow::onClientDisconnected() {
-    log("⚠️ Client disconnected.");
-    clientSocket->deleteLater();
-    clientSocket = nullptr;
+void MainWindow::onLogMessage(QString msg)
+{
+    ui->txtLog->append(msg);
 }

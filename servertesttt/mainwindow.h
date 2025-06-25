@@ -2,31 +2,26 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QTcpServer>
-#include <QTcpSocket>
-#include <QTextEdit>
+#include "servermanager.h"
 
-class QPushButton;
+QT_BEGIN_NAMESPACE
+namespace Ui { class MainWindow; }
+QT_END_NAMESPACE
 
-class MainWindow : public QMainWindow {
+class MainWindow : public QMainWindow
+{
     Q_OBJECT
 
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-private slots:
-    void onNewConnection();
-    void onClientDisconnected();
-    void onReadyRead();
-
 private:
-    void setupUI();
-    void log(const QString &message);
+    Ui::MainWindow *ui;
+    ServerManager *serverManager;
 
-    QTcpServer *server;
-    QTcpSocket *clientSocket;
-    QTextEdit *logBox;
+private slots:
+    void onPlayerCountChanged(int count);
+    void onLogMessage(QString msg);
 };
-
 #endif // MAINWINDOW_H
